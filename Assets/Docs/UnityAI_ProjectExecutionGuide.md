@@ -125,7 +125,7 @@ Assets/Docs/项目企划书.md
 | 峡湾观景站 | 挪威峡湾铁路 | 开阔、震撼但稳定 |
 | 极光花田站 | 极光下的花田 | 安静、平和 |
 
-当前搭建车厢时，只需为未来的视频、音频和脚本保留清晰结构。不要提前实现这些系统。
+车厢基础结构和核心视频播放系统已经完成。当前阶段进入音频、韩语语音播报与基础手柄输入接入：音频系统必须监听现有旅程事件，不得反向破坏视频播放逻辑。
 
 ---
 
@@ -225,52 +225,64 @@ Assets/
 
 ---
 
-## 8. 当前最高优先级：车厢场景搭建
+## 8. 当前最高优先级：音频、语音播报与基础输入接入
 
-当前只负责搭建车厢内部空间和坐姿观察体验。此阶段优先级最高。
+车厢内部空间、前方观景幕布和 Quest 2 离线视频链路已经可用。当前优先完成 BGM、环境音、韩语语音播报和基础手柄输入，不重新配置已经验证过的 XR、Android、OpenXR 或 URP 基线。
 
-### 8.1 当前负责范围
+### 8.1 已完成视频基线
 
-- 车厢内部基础空间比例。
-- 前方大型观景窗和窗框。
-- 地板、侧墙、天花板。
-- 座椅导入、缩放、朝向、Prefab 化和合理排列。
-- 简化车门。
-- 简化行李架。
-- 少量装饰物。
-- 简单 URP 材质和纹理。
-- 基础无阴影灯光。
-- 玩家固定坐姿位置和主要观察方向。
-- 模型面数、材质数量、纹理尺寸和重复对象数量控制。
+- 使用 `Assets/Videos/` 下三段本地 `VideoClip`。
+- 使用单个 `VideoPlayer` 输出到 `1280x720` Render Texture。
+- 使用前方 `FrontVideoScreen` 的 URP Unlit 材质显示画面。
+- 使用 `FrontVideoFadeOverlay` 提供站间柔和黑场。
+- 第一站在场景启动后预热，收到开始指令后播放。
+- 三站按顺序各播放一次，第三站结束后停留在结束状态。
+- `JourneySequenceController` 已保留开始、暂停继续、跳到下一站和后续系统接入接口。
+- 在 Unity Editor 中使用 Meta Quest Link / Air Link 的 PC OpenXR Runtime 验证。
+- Development APK 默认自动触发开始，方便在 VR 手柄按钮尚未绑定时执行真机冒烟测试。
+- 在 Quest 2 Development APK 中使用 Android Logcat 检查视频错误。
 
-### 8.2 当前明确不处理
+### 8.2 当前负责范围
 
-- 窗外视频导入和播放。
-- `VideoPlayer` 设置。
-- 三站视频切换。
-- 音频、语音和 BGM。
-- 手柄按钮交互。
-- 交互脚本。
-- 最终性能测试。
+- 新增独立音频控制脚本，挂在现有 `JourneySystem` 上。
+- 监听 `JourneySequenceController.StationStarted`、`JourneyCompleted`、`PlaybackError`。
+- 每站通过 `StationAudioProfile` 配置 BGM、环境音和韩语语音播报。
+- 暂停和继续时，音频跟随 `JourneySequenceController.State`。
+- 第三站结束后，BGM 和环境音柔和淡出。
+- 文档中记录 BGM、环境音和韩语 TTS 文案生成提示词。
+- 后续基础手柄输入只调用 `JourneySequenceController.StartJourney()`、`TogglePause()`、`SkipToNextStation()`。
+
+### 8.3 当前明确不处理
+
+- HTTP 流媒体。
+- `StreamingAssets` 文件 URL 方案。
+- 重新设计视频播放链路。
+- 直接修改 `VideoPlayer` 内部播放逻辑。
+- 中文语音作为最终导入 Unity 的正式播报音频。
 - 复杂 UI。
+- 虚拟手柄模型和复杂手部交互。
+- 最终性能优化。
 - XR 配置重做。
 - 大量装饰资源搜索和导入。
 
-### 8.3 推荐搭建顺序
+### 8.4 推荐接入顺序
 
 每次只执行一项，完成后等待确认：
 
-1. 审计当前场景 Hierarchy，不修改任何对象。
-2. 建立车厢白模根节点和基础目录。
-3. 使用基础几何体搭建地板、墙体、天花板。
-4. 建立前方大窗和窗框，确认前向视野。
-5. 放置单个座椅样例，确认比例、坐高和朝向。
-6. 将确认后的座椅制作成 Prefab，再进行有限数量复制。
-7. 添加侧窗、简化车门和简化行李架。
-8. 创建少量可复用 URP 材质。
-9. 添加简单无阴影灯光。
-10. 从玩家坐姿视角检查空间比例和主要观察方向。
-11. 汇总模型、材质、纹理和灯光数量，等待下一阶段决策。
+1. 配置 `JourneyAudioController` 和三个 `AudioSource`。
+2. 按三站 `StationAudioProfile` 绑定 BGM、环境音和韩语语音。
+3. 在 Editor 中验证开始、暂停继续、跳站和三站音频切换。
+4. 构建 Quest 2 Development APK。
+5. 在 Quest 2 连续完整播放至少三轮，并使用 Android Logcat 检查 `[VRTrainJourney.Video]`、`[VRTrainJourney.Audio]` 和 `AndroidVideoMedia`。
+
+### 8.5 已验证状态（2026-06-01）
+
+- 已生成并安装 `Builds/Android/VRTrainJourney2026_Debug.apk` 到 Quest 2。
+- Quest 2 真机 OpenXR 会话可以正常进入运行状态。
+- 三段本地视频已经在头显中完成一次可见顺序播放。
+- Android Logcat 已确认第一站预热后启动，以及第一站到第二站、第二站到第三站的切换和重新准备流程。
+- Quest 2 使用 Qualcomm 硬件 AVC 解码器 `OMX.qcom.video.decoder.avc` 播放当前 H.264 素材，未观察到准备超时或解码报错。
+- 以上结论证明核心离线播放链路可用。至少三轮连续播放仍作为后续耐久验证项保留。
 
 ---
 
@@ -386,16 +398,23 @@ Assets/Art/Models/Armchair/
 
 ## 12. 后续模块边界
 
-车厢阶段完成后，项目将按顺序接入：
+视频阶段完成后，项目将按顺序接入：
 
 ```text
 JourneySequenceController
-StationAnnouncementController
 FadeTransitionController
+JourneyAudioController
 VRInputController
 SeatedViewInitializer
-AudioMixController
 ```
+
+当前已经存在：
+
+- `JourneySequenceController`：旅程视频顺序、暂停继续、跳站和完成事件。
+- `FadeTransitionController`：前窗黑场淡入淡出。
+- `JourneyAudioController`：监听旅程事件，播放 BGM、环境音和韩语语音。
+
+后续如需拆分更复杂的播报或混音功能，可以在 `JourneyAudioController` 之上再扩展，不要让新脚本直接接管 `VideoPlayer`。
 
 未来手柄功能：
 
@@ -463,13 +482,13 @@ AudioMixController
 
 ---
 
-## 14. 当前首次任务
+## 14. 当前音频任务
 
 读取所有指定文档后：
 
-1. 审计当前 `SampleScene` 的 Hierarchy。
-2. 确认已有 `XR Origin (VR)`、`XR Interaction Manager`、灯光和其他对象。
-3. 检查 `Assets/Art/Models/Armchair/` 是否已经包含座椅模型和贴图。
-4. 只汇报现状和建议的第一个白模搭建步骤。
-5. 暂时不要修改场景。
-
+1. 确认 `JourneySystem` 上已有 `JourneySequenceController`。
+2. 运行 `Tools/VR Train Journey/Configure Audio System`。
+3. 在 `JourneyAudioController` 的三站 `StationAudioProfile` 中绑定 BGM、环境音和韩语语音 `AudioClip`。
+4. 在 Editor 中验证开始、暂停继续、跳站和第三站结束淡出。
+5. 构建 Quest 2 Development APK 并用 Logcat 检查 `[VRTrainJourney.Audio]`。
+6. 不要修改 XR、URP、OpenXR、VideoPlayer 或 RenderTexture 基线。
