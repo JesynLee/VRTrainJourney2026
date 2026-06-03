@@ -2,7 +2,7 @@
 
 记录日期：2026-06-03  
 适用工程：`VRTrainJourney2026`  
-当前阶段：核心视频播放系统已完成，本轮接入 BGM、环境音和韩语语音播报的可配置播放系统。
+当前阶段：核心视频播放系统已完成，本轮接入 BGM 和韩语语音播报的可配置播放系统。环境音已从正式制作范围中取消。
 
 ---
 
@@ -17,6 +17,7 @@
 - 音频系统不直接修改 `VideoPlayer`、RenderTexture、URP 材质或 OpenXR 设置。
 - 暂停和继续通过读取 `JourneySequenceController.State` 同步。
 - 正式语音播报必须使用韩语，中文只作为内部语义说明。
+- 当前正式素材只包含 3 段 BGM 和 4 段韩语语音，不制作、不绑定环境音。
 
 日志前缀：
 
@@ -47,21 +48,19 @@ Assets/
 
 - 站点名。
 - BGM 音频。
-- 环境音音频。
 - 韩语语音播报音频。
 - BGM 音量。
-- 环境音音量。
 - 语音音量。
 - 淡入时间。
 - 淡出时间。
 - 语音延迟时间。
 - BGM 是否循环。
-- 环境音是否循环。
 
 说明：
 
 - `StationAudioProfile` 使用 `[Serializable]`，直接显示在 `JourneyAudioController` 的 Inspector 中。
 - 后续替换音频素材时，只需要替换对应 `AudioClip`，不需要修改流程代码。
+- 代码中保留的 `Ambience Clip`、`Ambience Volume`、`Loop Ambience` 是兼容预留字段；本项目当前不使用，Inspector 中保持为空。
 
 ### 2.2 JourneyAudioController.cs
 
@@ -69,14 +68,16 @@ Assets/
 
 职责：
 
-- 持有三个 `AudioSource`：`BGM`、`Ambience`、`Voice`。
+- 持有三个 `AudioSource`：`BGM`、兼容预留的 `Ambience`、`Voice`。
 - 监听 `JourneySequenceController.StationStarted(int stationIndex)`。
+- 监听 `JourneySequenceController.JourneyCompleted`，播放独立终点韩语播报。
 - 按站点索引读取 `StationAudioProfile`。
-- 每站播放对应 BGM、环境音和韩语语音。
-- 语音播放时自动压低 BGM 和环境音。
+- 每站播放对应 BGM 和韩语语音。
+- 终点播报通过 `JourneyAudioController` 根字段 `Journey Completed Voice Clip` 绑定，不放在三站 `StationAudioProfile` 里。
+- 语音播放时自动压低 BGM。
 - 视频暂停时同步暂停音频。
 - 视频继续时同步恢复音频。
-- 第三站完成后整体淡出音频。
+- 第三站完成后先播放终点语音，再整体淡出音频。
 - 视频报错时停止音频。
 
 ### 2.3 JourneyAudioSystemSetup.cs
@@ -94,7 +95,7 @@ Tools/VR Train Journey/Configure Audio System
 - 查找现有 `JourneySystem`。
 - 检查 `JourneySequenceController` 是否存在。
 - 添加或复用 `JourneyAudioController`。
-- 添加或复用三个 `AudioSource`。
+- 添加或复用三个 `AudioSource`，其中 `Ambience` 仅为兼容预留。
 - 写入三站默认 `StationAudioProfile`。
 - 不创建假的音频素材，不伪装真实资源。
 
@@ -109,9 +110,9 @@ Tools/VR Train Journey/Configure Audio System
 | 项目 | 建议 |
 | --- | --- |
 | BGM 风格 | 慢速、温暖、轻弦乐、柔和钢琴，可少量手风琴点缀。 |
-| 环境音方向 | 低速列车行驶声、轻微轨道节奏、午后微风、远处鸟鸣。 |
-| 出现时机 | 第一站视频开始后 BGM 和环境音淡入，语音延迟约 1.2 秒进入。 |
-| 音量建议 | BGM `0.24`，环境音 `0.18`，语音 `0.95`。 |
+| 环境音 | 已取消，不制作、不绑定。 |
+| 出现时机 | 第一站视频开始后 BGM 淡入，语音延迟约 1.2 秒进入。 |
+| 音量建议 | BGM `0.24`，语音 `0.95`。 |
 | 淡入淡出 | 淡入约 `2.0s`，离站淡出约 `2.0s`。 |
 
 中文语义：
@@ -135,9 +136,9 @@ Tools/VR Train Journey/Configure Audio System
 | 项目 | 建议 |
 | --- | --- |
 | BGM 风格 | 宽广、稳定、低冲击的氛围管弦乐或柔和 pad，不使用强鼓点。 |
-| 环境音方向 | 列车低频行驶声、峡湾风声、远处瀑布水声、空间感较大的山谷回响。 |
+| 环境音 | 已取消，不制作、不绑定。 |
 | 出现时机 | 第二站开始时淡入，语音延迟约 1.2 秒进入。 |
-| 音量建议 | BGM `0.22`，环境音 `0.18`，语音 `0.95`。 |
+| 音量建议 | BGM `0.22`，语音 `0.95`。 |
 | 淡入淡出 | 淡入约 `2.25s`，离站淡出约 `2.25s`。 |
 
 中文语义：
@@ -161,9 +162,9 @@ Tools/VR Train Journey/Configure Audio System
 | 项目 | 建议 |
 | --- | --- |
 | BGM 风格 | 空灵、安静、冥想钢琴、轻柔合成器 pad，避免强节奏。 |
-| 环境音方向 | 更轻的列车底噪、夜风、柔和花田风声，不加入刺耳虫鸣。 |
+| 环境音 | 已取消，不制作、不绑定。 |
 | 出现时机 | 第三站开始时淡入，语音延迟约 1.4 秒进入；终点时整体淡出。 |
-| 音量建议 | BGM `0.20`，环境音 `0.15`，语音 `0.95`。 |
+| 音量建议 | BGM `0.20`，语音 `0.95`。 |
 | 淡入淡出 | 淡入约 `2.5s`，站内淡出约 `3.0s`，旅程完成淡出约 `4.0s`。 |
 
 中文语义：
@@ -243,34 +244,11 @@ Peaceful ethereal ambient music for a night train passing through an aurora flow
 - `slow breathing rhythm`：像慢呼吸一样的节奏感。
 - `calming ending atmosphere`：适合收尾的安定氛围。
 
-### 4.2 环境音生成提示词
+### 4.2 环境音取消说明
 
-第一站环境音：
+当前项目不再制作环境音素材，不需要生成列车底噪、风声、鸟鸣、瀑布声、夜风或其他环境氛围音。
 
-```text
-Loopable ambience for a slow scenic train ride in the afternoon countryside, gentle rail rhythm, soft cabin vibration, light warm breeze, distant small birds, very calm, no sudden loud sounds, no speech.
-```
-
-第二站环境音：
-
-```text
-Loopable ambience for a slow train moving through a Norwegian fjord valley, soft rail movement, low cabin rumble, wide mountain wind, distant waterfall, spacious natural echo, no sudden loud sounds, no speech.
-```
-
-第三站环境音：
-
-```text
-Loopable ambience for a quiet night train through an aurora flower field, very soft rail bed, gentle night wind, subtle flower field breeze, peaceful open air, no insects close to the ear, no sudden loud sounds, no speech.
-```
-
-关键英文说明：
-
-- `loopable ambience`：可循环环境音。
-- `soft cabin vibration`：轻微车厢振动。
-- `low cabin rumble`：低频车厢行驶声。
-- `distant waterfall`：远处瀑布声，不要太近太吵。
-- `no sudden loud sounds`：不要突然的大声响，保护老年体验者舒适度。
-- `no speech`：不要生成任何语音，避免和韩语播报冲突。
+Unity 中 `StationAudioProfile` 仍能看到 `Ambience Clip` 字段，这是此前为可扩展结构预留的兼容字段。正式绑定时保持为空即可，不需要导入任何 `Ambience` 文件。
 
 ### 4.3 韩语 TTS 生成要求
 
@@ -297,6 +275,23 @@ Emotion: peaceful, clear, not theatrical
 
 ## 5. Unity Inspector 绑定步骤
 
+当前素材接入的最小正式需求：
+
+```text
+3 段 BGM：
+BGM_Station01_GoldenVillage.wav
+BGM_Station02_FjordView.wav
+BGM_Station03_AuroraFlowerField.wav
+
+4 段韩语语音播报：
+Voice_KO_Station01_GoldenVillage.wav
+Voice_KO_Station02_FjordView.wav
+Voice_KO_Station03_AuroraFlowerField.wav
+Voice_KO_JourneyCompleted.wav
+```
+
+环境音已取消，不生成、不绑定。`Ambience Clip` 保持为空，不影响 BGM 和语音播报。
+
 1. 打开 `Assets/Scenes/SampleScene.unity`。
 2. 运行菜单：
 
@@ -319,29 +314,43 @@ AudioSource
 
 | Profile Index | 站点 | 需要绑定 |
 | --- | --- | --- |
-| `0` | `Station01_GoldenVillage` | 第一站 BGM、环境音、韩语语音 |
-| `1` | `Station02_FjordView` | 第二站 BGM、环境音、韩语语音 |
-| `2` | `Station03_AuroraFlowerField` | 第三站 BGM、环境音、韩语语音 |
+| `0` | `Station01_GoldenVillage` | `Bgm Clip` 绑定第一站 BGM，`Voice Clip` 绑定第一站开始播报 |
+| `1` | `Station02_FjordView` | `Bgm Clip` 绑定第二站 BGM，`Voice Clip` 绑定第一站到达并前往第二站播报 |
+| `2` | `Station03_AuroraFlowerField` | `Bgm Clip` 绑定第三站 BGM，`Voice Clip` 绑定第二站到达并前往第三站播报 |
 
-6. 建议资源目录：
+6. 在 `JourneyAudioController` 根字段中绑定：
+
+| 字段 | 需要绑定 |
+| --- | --- |
+| `Journey Completed Voice Clip` | `Voice_KO_JourneyCompleted.wav`，第三站结束后的终点播报 |
+
+7. 建议资源目录：
 
 ```text
 Assets/Audio/BGM/
-Assets/Audio/Ambience/Train/
-Assets/Audio/Ambience/Stations/
 Assets/Audio/Voice/
 ```
 
-7. 正式语音文件命名建议：
+8. 正式素材文件命名建议：
 
 ```text
+BGM_Station01_GoldenVillage.wav
+BGM_Station02_FjordView.wav
+BGM_Station03_AuroraFlowerField.wav
 Voice_KO_Station01_GoldenVillage.wav
 Voice_KO_Station02_FjordView.wav
 Voice_KO_Station03_AuroraFlowerField.wav
 Voice_KO_JourneyCompleted.wav
 ```
 
-如果单独制作终点语音，后续可将它扩展为单独完成提示 Clip；当前基础系统以第三站语音和完成淡出为主。
+9. 资源放置完成后，如果需要由 Codex/Unity AI 继续处理，应只做以下动作：
+
+- 把 3 个 BGM 文件拖入 `Assets/Audio/BGM/`。
+- 把 4 个韩语语音文件拖入 `Assets/Audio/Voice/`。
+- 打开 `JourneySystem` 的 `JourneyAudioController`。
+- 将每个 `AudioClip` 绑定到对应字段。
+- `Ambience Clip` 不绑定任何资源。
+- 不修改 `JourneySequenceController`、`VideoPlayer`、XR、URP 或 OpenXR 设置。
 
 ---
 
@@ -372,11 +381,11 @@ Voice_KO_JourneyCompleted.wav
 5. 检查：
 
 - 三站视频仍正常顺序播放。
-- 每站 BGM、环境音和韩语播报按站点变化。
+- 每站 BGM 和韩语播报按站点变化。
 - 暂停和继续时音频同步。
 - 跳站时没有残留上一站循环音。
 - 第三站结束后音频淡出。
-- 韩语语音不被 BGM 或环境音遮盖。
+- 韩语语音不被 BGM 遮盖。
 
 ---
 
@@ -405,12 +414,11 @@ Voice_KO_JourneyCompleted.wav
 | 类型 | Unity 导入建议 |
 | --- | --- |
 | BGM | `Compressed In Memory`，循环点要平滑。 |
-| 环境音 | `Compressed In Memory`，优先检查 loop 是否无缝。 |
 | 韩语短播报 | `Decompress On Load` 或 `Compressed In Memory` 均可，优先清晰度。 |
 | 较长语音 | 可考虑 `Streaming`，但当前项目语音较短，一般不必。 |
 
 音频文件响度建议：
 
 - 语音播报优先清晰，不追求很响。
-- BGM 和环境音作为背景，不抢语音。
+- BGM 作为背景，不抢语音。
 - 不使用突然高音、爆音、强鼓点或刺耳音效。

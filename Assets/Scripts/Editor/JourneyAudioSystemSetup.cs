@@ -55,7 +55,11 @@ namespace VRTrainJourney.Editor
             ConfigureAudioSource(sources[1], "Ambience");
             ConfigureAudioSource(sources[2], "Voice");
 
-            audioController.ResetToDefaultProfiles();
+            if (audioController.StationProfiles == null || audioController.StationProfiles.Length == 0)
+            {
+                audioController.ResetToDefaultProfiles();
+            }
+
             audioController.Configure(sequence, sources[0], sources[1], sources[2], audioController.StationProfiles);
 
             EditorUtility.SetDirty(journeySystem);
@@ -65,7 +69,7 @@ namespace VRTrainJourney.Editor
             EditorUtility.SetDirty(sources[2]);
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-            Debug.Log($"{LogPrefix} Configured JourneyAudioController with BGM, ambience, and Korean voice AudioSources. Assign AudioClips in the station profiles before final testing.");
+            Debug.Log($"{LogPrefix} Configured JourneyAudioController for BGM and Korean voice playback. Leave Ambience Clip fields empty for the current project scope.");
         }
 
         private static void ConfigureAudioSource(AudioSource source, string role)

@@ -13,6 +13,9 @@ namespace VRTrainJourney.Journey
         [SerializeField] private AudioSource ambienceSource;
         [SerializeField] private AudioSource voiceSource;
         [SerializeField] private StationAudioProfile[] stationProfiles = Array.Empty<StationAudioProfile>();
+        [SerializeField] private AudioClip journeyCompletedVoiceClip;
+        [SerializeField, Range(0f, 1f)] private float journeyCompletedVoiceVolume = 0.95f;
+        [SerializeField, Min(0f)] private float journeyCompletedVoiceDelaySeconds = 0.4f;
         [SerializeField, Range(0f, 1f)] private float voiceDuckingMultiplier = 0.5f;
         [SerializeField, Min(0f)] private float voiceDuckingSpeed = 2.5f;
         [SerializeField, Min(0f)] private float journeyCompleteFadeSeconds = 4f;
@@ -177,10 +180,6 @@ namespace VRTrainJourney.Journey
                 ambienceSource.volume = 0f;
                 ambienceSource.Play();
             }
-            else
-            {
-                Debug.LogWarning($"{LogPrefix} Ambience clip is not assigned for {profile.StationName}.");
-            }
 
             yield return FadeMusicAndAmbience(profile.FadeInSeconds, desiredBgmVolume, desiredAmbienceVolume);
 
@@ -200,9 +199,28 @@ namespace VRTrainJourney.Journey
 
         private void HandleJourneyCompleted()
         {
-            Debug.Log($"{LogPrefix} Journey completed. Fading out audio.");
+            Debug.Log($"{LogPrefix} Journey completed. Playing completion voice and fading out audio.");
             StopRunningRoutines();
-            transitionFadeRoutine = StartCoroutine(FadeSourcesToZero(journeyCompleteFadeSeconds, true));
+            transitionFadeRoutine = StartCoroutine(PlayJourneyCompletedAudio());
+        }
+
+        private IEnumerator PlayJourneyCompletedAudio()
+        {
+            if (journeyCompletedVoiceClip != null)
+            {
+                yield return WaitForJourneySeconds(journeyCompletedVoiceDelaySeconds);
+                ConfigureSourceForClip(voiceSource, journeyCompletedVoiceClip, false);
+                voiceSource.volume = journeyCompletedVoiceVolume;
+                voiceSource.Play();
+                yield return WaitForVoiceToFinish();
+            }
+            else
+            {
+                Debug.LogWarning($"{LogPrefix} Journey completed Korean voice clip is not assigned.");
+            }
+
+            yield return FadeSourcesToZero(journeyCompleteFadeSeconds, true);
+            transitionFadeRoutine = null;
         }
 
         private void HandlePlaybackError(string message)
@@ -340,6 +358,14 @@ namespace VRTrainJourney.Journey
                     elapsed += Time.unscaledDeltaTime;
                 }
 
+                yield return null;
+            }
+        }
+
+        private IEnumerator WaitForVoiceToFinish()
+        {
+            while (voiceSource != null && voiceSource.isPlaying)
+            {
                 yield return null;
             }
         }

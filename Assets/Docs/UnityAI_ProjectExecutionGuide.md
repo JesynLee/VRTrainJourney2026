@@ -227,7 +227,7 @@ Assets/
 
 ## 8. 当前最高优先级：音频、语音播报与基础输入接入
 
-车厢内部空间、前方观景幕布和 Quest 2 离线视频链路已经可用。当前优先完成 BGM、环境音、韩语语音播报和基础手柄输入，不重新配置已经验证过的 XR、Android、OpenXR 或 URP 基线。
+车厢内部空间、前方观景幕布和 Quest 2 离线视频链路已经可用。当前优先完成 BGM、韩语语音播报和基础手柄输入，不重新配置已经验证过的 XR、Android、OpenXR 或 URP 基线。环境音已从正式制作范围中取消。
 
 ### 8.1 已完成视频基线
 
@@ -246,10 +246,12 @@ Assets/
 
 - 新增独立音频控制脚本，挂在现有 `JourneySystem` 上。
 - 监听 `JourneySequenceController.StationStarted`、`JourneyCompleted`、`PlaybackError`。
-- 每站通过 `StationAudioProfile` 配置 BGM、环境音和韩语语音播报。
+- 每站通过 `StationAudioProfile` 配置 BGM 和韩语语音播报。
+- 当前最小正式素材需求为 3 段 BGM 和 4 段韩语语音：三站开始/过渡播报各 1 段，第三站结束终点播报 1 段。
 - 暂停和继续时，音频跟随 `JourneySequenceController.State`。
-- 第三站结束后，BGM 和环境音柔和淡出。
-- 文档中记录 BGM、环境音和韩语 TTS 文案生成提示词。
+- 第三站结束后播放终点语音，并将 BGM 柔和淡出。
+- 文档中记录 BGM 和韩语 TTS 文案生成提示词。
+- 不制作、不导入、不绑定环境音素材；`Ambience Clip` 字段保持为空。
 - 后续基础手柄输入只调用 `JourneySequenceController.StartJourney()`、`TogglePause()`、`SkipToNextStation()`。
 
 ### 8.3 当前明确不处理
@@ -270,10 +272,11 @@ Assets/
 每次只执行一项，完成后等待确认：
 
 1. 配置 `JourneyAudioController` 和三个 `AudioSource`。
-2. 按三站 `StationAudioProfile` 绑定 BGM、环境音和韩语语音。
-3. 在 Editor 中验证开始、暂停继续、跳站和三站音频切换。
-4. 构建 Quest 2 Development APK。
-5. 在 Quest 2 连续完整播放至少三轮，并使用 Android Logcat 检查 `[VRTrainJourney.Video]`、`[VRTrainJourney.Audio]` 和 `AndroidVideoMedia`。
+2. 将生成好的 3 段 BGM 放入 `Assets/Audio/BGM/`，4 段韩语语音放入 `Assets/Audio/Voice/`。
+3. 按三站 `StationAudioProfile` 绑定 BGM 和三站语音，并在 `JourneyAudioController` 的 `Journey Completed Voice Clip` 字段绑定终点语音。
+4. 在 Editor 中验证开始、暂停继续、跳站和三站音频切换。
+5. 构建 Quest 2 Development APK。
+6. 在 Quest 2 连续完整播放至少三轮，并使用 Android Logcat 检查 `[VRTrainJourney.Video]`、`[VRTrainJourney.Audio]` 和 `AndroidVideoMedia`。
 
 ### 8.5 已验证状态（2026-06-01）
 
@@ -412,7 +415,7 @@ SeatedViewInitializer
 
 - `JourneySequenceController`：旅程视频顺序、暂停继续、跳站和完成事件。
 - `FadeTransitionController`：前窗黑场淡入淡出。
-- `JourneyAudioController`：监听旅程事件，播放 BGM、环境音和韩语语音。
+- `JourneyAudioController`：监听旅程事件，播放 BGM 和韩语语音。
 
 后续如需拆分更复杂的播报或混音功能，可以在 `JourneyAudioController` 之上再扩展，不要让新脚本直接接管 `VideoPlayer`。
 
@@ -488,7 +491,7 @@ SeatedViewInitializer
 
 1. 确认 `JourneySystem` 上已有 `JourneySequenceController`。
 2. 运行 `Tools/VR Train Journey/Configure Audio System`。
-3. 在 `JourneyAudioController` 的三站 `StationAudioProfile` 中绑定 BGM、环境音和韩语语音 `AudioClip`。
+3. 在 `JourneyAudioController` 的三站 `StationAudioProfile` 中绑定 BGM 和韩语语音 `AudioClip`，`Ambience Clip` 保持为空。
 4. 在 Editor 中验证开始、暂停继续、跳站和第三站结束淡出。
 5. 构建 Quest 2 Development APK 并用 Logcat 检查 `[VRTrainJourney.Audio]`。
 6. 不要修改 XR、URP、OpenXR、VideoPlayer 或 RenderTexture 基线。

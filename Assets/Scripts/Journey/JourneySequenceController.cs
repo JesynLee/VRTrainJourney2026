@@ -34,6 +34,9 @@ namespace VRTrainJourney.Journey
         [SerializeField] private bool logPlaybackDiagnostics = true;
         [SerializeField, Min(0.25f)] private float playbackDiagnosticsInterval = 1f;
 #endif
+#if UNITY_EDITOR
+        [SerializeField, Min(0.5f)] private float editorPlaybackStallSeconds = 3f;
+#endif
 
         [SerializeField] private UnityEvent<int> stationStarted = new UnityEvent<int>();
         [SerializeField] private UnityEvent journeyCompleted = new UnityEvent();
@@ -43,6 +46,10 @@ namespace VRTrainJourney.Journey
         private Coroutine prepareTimeout;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         private Coroutine playbackDiagnostics;
+#endif
+#if UNITY_EDITOR
+        private Coroutine editorPlaybackStallWatchdog;
+        private bool editorPlaybackProgressDetected;
 #endif
         private bool playWhenPrepared;
 
@@ -92,6 +99,9 @@ namespace VRTrainJourney.Journey
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             StopPlaybackDiagnostics();
+#endif
+#if UNITY_EDITOR
+            StopEditorPlaybackStallWatchdog();
 #endif
             videoPlayer.prepareCompleted -= HandlePrepareCompleted;
             videoPlayer.loopPointReached -= HandleLoopPointReached;
@@ -254,6 +264,9 @@ namespace VRTrainJourney.Journey
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             StartPlaybackDiagnostics();
 #endif
+#if UNITY_EDITOR
+            StartEditorPlaybackStallWatchdog();
+#endif
 
             if (activeTransition != null)
             {
@@ -294,6 +307,9 @@ namespace VRTrainJourney.Journey
             StopPrepareTimeout();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             StopPlaybackDiagnostics();
+#endif
+#if UNITY_EDITOR
+            StopEditorPlaybackStallWatchdog();
 #endif
             playWhenPrepared = false;
             if (activeTransition != null)
@@ -345,6 +361,9 @@ namespace VRTrainJourney.Journey
             StopPrepareTimeout();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             StopPlaybackDiagnostics();
+#endif
+#if UNITY_EDITOR
+            StopEditorPlaybackStallWatchdog();
 #endif
             if (activeTransition != null)
             {
@@ -409,5 +428,98 @@ namespace VRTrainJourney.Journey
             StopCoroutine(prepareTimeout);
             prepareTimeout = null;
         }
+
+#if UNITY_EDITOR
+        private void StartEditorPlaybackStallWatchdog()
+        {
+            StopEditorPlaybackStallWatchdog();
+            editorPlaybackStallWatchdog = StartCoroutine(WatchEditorPlaybackProgress());
+        }
+
+        private void StopEditorPlaybackStallWatchdog()
+        {
+            if (editorPlaybackStallWatchdog == null)
+            {
+                return;
+            }
+
+            StopCoroutine(editorPlaybackStallWatchdog);
+            editorPlaybackStallWatchdog = null;
+        }
+
+        private IEnumerator WatchEditorPlaybackProgress()
+        {
+            int stationIndex = CurrentStationIndex;
+            VideoClip clip = videoPlayer.clip;
+
+            yield return WaitForEditorPlaybackProgress(stationIndex, clip, editorPlaybackStallSeconds);
+            if (!IsSamePlayingStation(stationIndex, clip))
+            {
+                editorPlaybackStallWatchdog = null;
+                yield break;
+            }
+
+            if (editorPlaybackProgressDetected)
+            {
+                editorPlaybackStallWatchdog = null;
+                yield break;
+            }
+
+            Debug.LogWarning(
+                $"{LogPrefix} Editor playback appears stalled for station {stationIndex + 1}: {clip.name}. " +
+                "Trying one playback head nudge. If this repeats, re-encode the MP4 with constant frame rate H.264 Baseline/Main and fast start.");
+
+            double seekTime = videoPlayer.length > 0.2 ? 0.1 : 0.03;
+            videoPlayer.Pause();
+            videoPlayer.time = seekTime;
+            videoPlayer.Play();
+
+            yield return WaitForEditorPlaybackProgress(stationIndex, clip, editorPlaybackStallSeconds);
+            if (!IsSamePlayingStation(stationIndex, clip))
+            {
+                editorPlaybackStallWatchdog = null;
+                yield break;
+            }
+
+            if (!editorPlaybackProgressDetected)
+            {
+                EnterError(
+                    $"Editor playback stalled for station {stationIndex + 1}: {clip.name}. " +
+                    "The MP4 likely has timestamps/profile settings that Unity Editor cannot decode reliably. Re-export this video as constant-frame-rate H.264 MP4.");
+            }
+
+            editorPlaybackStallWatchdog = null;
+        }
+
+        private IEnumerator WaitForEditorPlaybackProgress(int stationIndex, VideoClip clip, float seconds)
+        {
+            editorPlaybackProgressDetected = false;
+            double startTime = videoPlayer.time;
+            long startFrame = videoPlayer.frame;
+            float elapsed = 0f;
+
+            while (elapsed < seconds &&
+                   State == JourneyPlaybackState.Playing &&
+                   CurrentStationIndex == stationIndex &&
+                   videoPlayer.clip == clip)
+            {
+                if (videoPlayer.time > startTime + 0.05 || videoPlayer.frame > startFrame + 2)
+                {
+                    editorPlaybackProgressDetected = true;
+                    yield break;
+                }
+
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+        }
+
+        private bool IsSamePlayingStation(int stationIndex, VideoClip clip)
+        {
+            return State == JourneyPlaybackState.Playing &&
+                   CurrentStationIndex == stationIndex &&
+                   videoPlayer.clip == clip;
+        }
+#endif
     }
 }
