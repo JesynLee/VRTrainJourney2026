@@ -286,6 +286,8 @@ Assets/
 - Android Logcat 已确认第一站预热后启动，以及第一站到第二站、第二站到第三站的切换和重新准备流程。
 - Quest 2 使用 Qualcomm 硬件 AVC 解码器 `OMX.qcom.video.decoder.avc` 播放当前 H.264 素材，未观察到准备超时或解码报错。
 - 以上结论证明核心离线播放链路可用。至少三轮连续播放仍作为后续耐久验证项保留。
+- 已知 Unity Editor 的 Game 预览窗口中，三站连续播放可能偶发在第二站或第三站首帧卡住，表现为 `VideoPlayer.isPlaying=True` 但 `time/frame` 不推进。Quest 2 真机可以完整跑完流程，因此当前以真机表现作为验收依据。
+- 后续 Unity AI 不应为了该 Editor 预览问题继续重做 XR、URP、OpenXR、RenderTexture 或核心视频播放架构；如需彻底解决 Editor 预览稳定性，应单独立项。
 
 ---
 

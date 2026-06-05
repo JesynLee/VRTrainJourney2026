@@ -43,6 +43,7 @@ namespace VRTrainJourney.Journey
         [SerializeField] private UnityEvent<string> playbackError = new UnityEvent<string>();
 
         private Coroutine activeTransition;
+        private Coroutine prepareRoutine;
         private Coroutine prepareTimeout;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         private Coroutine playbackDiagnostics;
@@ -103,6 +104,7 @@ namespace VRTrainJourney.Journey
 #if UNITY_EDITOR
             StopEditorPlaybackStallWatchdog();
 #endif
+            StopPrepareRoutine();
             videoPlayer.prepareCompleted -= HandlePrepareCompleted;
             videoPlayer.loopPointReached -= HandleLoopPointReached;
             videoPlayer.errorReceived -= HandleErrorReceived;
@@ -217,15 +219,33 @@ namespace VRTrainJourney.Journey
                 return;
             }
 
+            StopPrepareRoutine();
+            prepareRoutine = StartCoroutine(PrepareStationRoutine(stationIndex, shouldPlayWhenPrepared));
+        }
+
+        private IEnumerator PrepareStationRoutine(int stationIndex, bool shouldPlayWhenPrepared)
+        {
             StopPrepareTimeout();
-            videoPlayer.Stop();
             CurrentStationIndex = stationIndex;
             playWhenPrepared = shouldPlayWhenPrepared;
             State = JourneyPlaybackState.Preparing;
+
+            videoPlayer.Stop();
+            videoPlayer.clip = null;
+            videoPlayer.url = string.Empty;
+
+            if (videoPlayer.targetTexture != null)
+            {
+                videoPlayer.targetTexture.Release();
+            }
+
+            yield return null;
+
             videoPlayer.clip = stationClips[stationIndex];
             videoPlayer.Prepare();
             prepareTimeout = StartCoroutine(WaitForPrepareTimeout(stationIndex));
             Debug.Log($"{LogPrefix} Preparing station {stationIndex + 1}: {stationClips[stationIndex].name}");
+            prepareRoutine = null;
         }
 
         private void HandlePrepareCompleted(VideoPlayer source)
@@ -359,6 +379,7 @@ namespace VRTrainJourney.Journey
         private void EnterError(string message)
         {
             StopPrepareTimeout();
+            StopPrepareRoutine();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             StopPlaybackDiagnostics();
 #endif
@@ -427,6 +448,17 @@ namespace VRTrainJourney.Journey
 
             StopCoroutine(prepareTimeout);
             prepareTimeout = null;
+        }
+
+        private void StopPrepareRoutine()
+        {
+            if (prepareRoutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(prepareRoutine);
+            prepareRoutine = null;
         }
 
 #if UNITY_EDITOR

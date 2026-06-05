@@ -387,6 +387,8 @@ Voice_KO_JourneyCompleted.wav
 - 第三站结束后音频淡出。
 - 韩语语音不被 BGM 遮盖。
 
+注意：Unity Editor 的 Game 预览窗口中，视频连续切站可能偶发卡在第二站或第三站首帧。如果 Quest 2 真机可以完整播放三站并且 BGM、韩语播报同步正常，则该 Editor 预览问题不作为当前音频系统阻塞项。
+
 ---
 
 ## 7. 后续手柄控制接口

@@ -362,6 +362,17 @@ OMX.qcom.video.decoder.avc
 - `AVC` 是 H.264 视频编码的一种常见名称。
 - 当前日志说明 Quest 2 能够使用硬件解码器播放当前视频素材。
 
+### 6.1 已知 Editor 预览问题
+
+2026-06-03 记录：
+
+- 在 Unity Editor 的 Game 预览窗口中，三站连续播放偶发出现第二站或第三站画面卡在首帧的问题。
+- Console 现象通常表现为 `VideoPlayer.isPlaying=True`，但 `videoPlayer.time=0.00`、`videoPlayer.frame=0` 长时间不推进。
+- 同一套流程打包到 Quest 2 后，可以完整跑完三站视频、BGM 和韩语语音播报。
+- 该问题目前按 Unity Editor 预览层或 VideoPlayer Editor 解码状态问题记录，不作为 Quest 2 真机演示阻塞项。
+- 后续不要为了该 Editor 预览问题继续大改 XR、URP、OpenXR、RenderTexture 或核心视频播放架构。
+- 若未来必须让 Editor 预览也完全稳定，再单独立项评估多 `VideoPlayer`、播放预热池或专门的 Editor 调试模式。
+
 仍建议后续作为回归测试补做：
 
 1. 连续三轮完整播放，不让头显休眠。
