@@ -36,12 +36,9 @@ codex-*.jsonl
 # Local tools and downloaded utility binaries
 /Tools/ffmpeg/
 
-# Non-source process notes under Unity docs.
-# Keep durable project docs tracked; ignore dated handoff/task logs.
-/Assets/Docs/*日志*.md
-/Assets/Docs/*日志*.md.meta
-/Assets/Docs/*_20[0-9][0-9][0-9][0-9][0-9][0-9].md
-/Assets/Docs/*_20[0-9][0-9][0-9][0-9][0-9][0-9].md.meta
+# Local project notes and AI handoff documents
+/Assets/Docs/
+/Assets/Docs.meta
 
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
