@@ -11,7 +11,37 @@
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 *.log
+
+# OS and local editor clutter
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.Zone.Identifier
+.idea/
+.vscode/.ropeproject/
+*.slnx
+
+# Codex and local agent workspaces, transcripts, and scratch notes
+/.codex/
+/.agents/
+/.claude/
+/.mcp/
+codex-*.log
+codex-*.jsonl
+*.codex.log
+*.codex.jsonl
+*Codex*.log
+*Codex*.jsonl
+
+# Local tools and downloaded utility binaries
 /Tools/ffmpeg/
+
+# Non-source process notes under Unity docs.
+# Keep durable project docs tracked; ignore dated handoff/task logs.
+/Assets/Docs/*日志*.md
+/Assets/Docs/*日志*.md.meta
+/Assets/Docs/*_20[0-9][0-9][0-9][0-9][0-9][0-9].md
+/Assets/Docs/*_20[0-9][0-9][0-9][0-9][0-9][0-9].md.meta
 
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
