@@ -2079,6 +2079,7 @@ GameObject:
   - component: {fileID: 572700818}
   - component: {fileID: 572700817}
   - component: {fileID: 572700816}
+  - component: {fileID: 572700820}
   m_Layer: 0
   m_Name: JourneySystem
   m_TagString: Untagged
@@ -2124,6 +2125,7 @@ MonoBehaviour:
   prepareTimeoutSeconds: 10
   logPlaybackDiagnostics: 1
   playbackDiagnosticsInterval: 1
+  editorPlaybackStallSeconds: 3
   stationStarted:
     m_PersistentCalls:
       m_Calls: []
@@ -2547,6 +2549,22 @@ MonoBehaviour:
   voiceDuckingMultiplier: 0.5
   voiceDuckingSpeed: 2.5
   journeyCompleteFadeSeconds: 4
+--- !u!114 &572700820
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 572700810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b801630cb7c94ee4ba948198091bd712, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VRTrainJourney.Journey.JourneyHandControllerInput
+  journeySequence: {fileID: 572700812}
+  restartHoldSeconds: 1
+  hapticAmplitude: 0.25
+  hapticDurationSeconds: 0.08
 --- !u!1 &590368051
 GameObject:
   m_ObjectHideFlags: 0
@@ -3042,6 +3060,7 @@ GameObject:
   - component: {fileID: 822052821}
   - component: {fileID: 822052820}
   - component: {fileID: 822052819}
+  - component: {fileID: 822052822}
   m_Layer: 0
   m_Name: XR Origin (VR)
   m_TagString: Untagged
@@ -3078,7 +3097,7 @@ MonoBehaviour:
   m_OriginBaseGameObject: {fileID: 822052818}
   m_CameraFloorOffsetObject: {fileID: 1062799869}
   m_RequestedTrackingOriginMode: 1
-  m_CameraYOffset: 1.1176
+  m_CameraYOffset: 0
 --- !u!4 &822052821
 Transform:
   m_ObjectHideFlags: 0
@@ -3095,6 +3114,22 @@ Transform:
   - {fileID: 1062799870}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &822052822
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 822052818}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c43a20e64e0bca4596506fade4f3847, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VRTrainJourney.Journey.SeatedViewDiagnostics
+  xrOrigin: {fileID: 822052820}
+  cameraOffset: {fileID: 1062799870}
+  mainCamera: {fileID: 1219751904}
+  delayedSnapshotSeconds: 2
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0

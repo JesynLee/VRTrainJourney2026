@@ -37,6 +37,8 @@ namespace VRTrainJourney.Editor
         {
             AssetDatabase.Refresh();
             ValidateRequiredAssets();
+            JourneyVideoSystemSetup.ConfigureSceneForBuild();
+            JourneySeatedViewSetup.ConfigureSceneForBuild();
 
             if (!EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android))
             {

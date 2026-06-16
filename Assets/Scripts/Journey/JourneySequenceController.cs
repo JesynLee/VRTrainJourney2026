@@ -179,6 +179,31 @@ namespace VRTrainJourney.Journey
             StartTransitionToNextStation();
         }
 
+        public void RestartJourney()
+        {
+            if (!ValidateConfiguration())
+            {
+                return;
+            }
+
+            StopPrepareTimeout();
+            StopPrepareRoutine();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            StopPlaybackDiagnostics();
+#endif
+#if UNITY_EDITOR
+            StopEditorPlaybackStallWatchdog();
+#endif
+            playWhenPrepared = false;
+
+            if (activeTransition != null)
+            {
+                StopCoroutine(activeTransition);
+            }
+
+            activeTransition = StartCoroutine(RestartJourneyRoutine());
+        }
+
         private bool ValidateConfiguration()
         {
             if (videoPlayer == null)
@@ -359,6 +384,18 @@ namespace VRTrainJourney.Journey
 
             activeTransition = null;
             PrepareStation(nextStationIndex, true);
+        }
+
+        private IEnumerator RestartJourneyRoutine()
+        {
+            State = JourneyPlaybackState.Transitioning;
+            yield return fadeTransition.FadeTo(1f, fadeOutDuration);
+            yield return new WaitForSecondsRealtime(minimumBlackDuration);
+
+            videoPlayer.Stop();
+            activeTransition = null;
+            PrepareStation(0, true);
+            Debug.Log($"{LogPrefix} Restarted journey from station 1.");
         }
 
         private IEnumerator WaitForPrepareTimeout(int stationIndex)

@@ -47,6 +47,17 @@ namespace VRTrainJourney.Editor
             ConfigureScene(scene);
         }
 
+        public static void ConfigureSceneForBuild()
+        {
+            Scene scene = SceneManager.GetSceneByPath(ScenePath);
+            if (!scene.IsValid() || !scene.isLoaded)
+            {
+                scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            }
+
+            ConfigureScene(scene);
+        }
+
         private static void ConfigureLoadedSampleSceneOnce()
         {
             if (EditorApplication.isCompiling || EditorApplication.isUpdating || EditorApplication.isPlayingOrWillChangePlaymode)
@@ -81,6 +92,7 @@ namespace VRTrainJourney.Editor
                    journeySystem.GetComponent<FadeTransitionController>() == null ||
                    journeySystem.GetComponent<JourneySequenceController>() == null ||
                    journeySystem.GetComponent<JourneyDebugInput>() == null ||
+                   journeySystem.GetComponent<JourneyHandControllerInput>() == null ||
                    AssetDatabase.LoadAssetAtPath<RenderTexture>(RenderTexturePath) == null ||
                    AssetDatabase.LoadAssetAtPath<Material>(VideoMaterialPath) == null ||
                    AssetDatabase.LoadAssetAtPath<Material>(FadeMaterialPath) == null;
@@ -109,12 +121,14 @@ namespace VRTrainJourney.Editor
             FadeTransitionController fade = GetOrAddComponent<FadeTransitionController>(journeySystem);
             JourneySequenceController sequence = GetOrAddComponent<JourneySequenceController>(journeySystem);
             JourneyDebugInput debugInput = GetOrAddComponent<JourneyDebugInput>(journeySystem);
+            JourneyHandControllerInput handInput = GetOrAddComponent<JourneyHandControllerInput>(journeySystem);
 
             VideoClip[] clips = LoadStationClips();
             ConfigureVideoPlayer(videoPlayer, renderTexture);
             fade.Configure(overlay.GetComponent<Renderer>());
             sequence.Configure(videoPlayer, fade, clips);
             debugInput.Configure(sequence, true);
+            handInput.Configure(sequence);
 
             EditorUtility.SetDirty(renderTexture);
             EditorUtility.SetDirty(videoMaterial);
@@ -126,10 +140,11 @@ namespace VRTrainJourney.Editor
             EditorUtility.SetDirty(fade);
             EditorUtility.SetDirty(sequence);
             EditorUtility.SetDirty(debugInput);
+            EditorUtility.SetDirty(handInput);
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             AssetDatabase.SaveAssets();
-            Debug.Log($"{LogPrefix} Configured local VideoClip playback, RenderTexture output, fade overlay, and JourneySystem.");
+            Debug.Log($"{LogPrefix} Configured local VideoClip playback, RenderTexture output, fade overlay, hand controls, and JourneySystem.");
         }
 
         private static RenderTexture GetOrCreateRenderTexture()
